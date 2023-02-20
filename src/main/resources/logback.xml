@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration scan="true" scanPeriod="60 seconds" debug="false">
+    <statusListener class="ch.qos.logback.core.status.OnConsoleStatusListener"/>
+
+    <contextName>api</contextName>
+    <!-- Define log file input location -->
+    <property name="LOG_DIR" value="C:/logs/api"/>
+    <!-- Maximum log history 30 days -->
+    <property name="maxHistory" value="1"/>
+    <property name="maxFileSize" value="30MB"/>
+    <property name="fileName" value="api"/>
+    <property name="pattern" value="%d %25.25M:%-4.4L - [%X{token}] - %m - %-22.22c{1.} %n"/>
+
+    <!-- ERROR Level log -->
+    <!-- Scroll to record the file, first record the log to the specified file, and when a certain condition is met, record the log to other files RollingFileAppender -->
+    <appender name="ERROR"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/${fileName}-error.log</file>
+        <!-- Filters, recording only WARN Level log -->
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>ERROR</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <!-- The most commonly used rolling strategy, which makes rolling strategy according to time.Responsible for rolling as well as starting rolling -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+
+            <!--Log output location can be relative, absolute path -->
+            <fileNamePattern>${LOG_DIR}/%d{yyyy-MM}/${fileName}-error.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <!-- Optional node, which controls the maximum number of archive files to be retained. If the number is exceeded, the old files will be deleted. Suppose that the setting scrolls every month, and<maxHistory>If it is 6, only the last 6 months' files will be saved, and the previous old files will be deleted. Note that deleting old files means that directories created for archiving will also be deleted -->
+            <maxHistory>${maxHistory}</maxHistory>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${maxFileSize}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+
+        <encoder>
+            <pattern>${pattern}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- WARN Level log appender -->
+    <appender name="WARN"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/${fileName}-warn.log</file>
+        <!-- Filters, recording only WARN Level log -->
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>WARN</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- Roll back by day daily -->
+            <fileNamePattern>${LOG_DIR}/%d{yyyy-MM}/${fileName}-warn.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <!-- Maximum log history 30 days -->
+            <maxHistory>${maxHistory}</maxHistory>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${maxFileSize}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+
+        <encoder>
+            <pattern>${pattern}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- INFO Level log appender -->
+    <appender name="INFO"
+              class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_DIR}/${fileName}.log</file>
+        <!-- Filters, recording only INFO Level log -->
+        <filter class="ch.qos.logback.classic.filter.LevelFilter">
+            <level>INFO</level>
+            <onMatch>ACCEPT</onMatch>
+            <onMismatch>DENY</onMismatch>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <!-- Roll back by day daily -->
+            <fileNamePattern>${LOG_DIR}/%d{yyyy-MM}/${fileName}-info.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <!-- Maximum log history 30 days -->
+            <maxHistory>${maxHistory}</maxHistory>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>${maxFileSize}</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+        </rollingPolicy>
+
+        <encoder>
+            <pattern>${pattern}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- DEBUG Level log appender -->
+<!--    <appender name="DEBUG"-->
+<!--              class="ch.qos.logback.core.rolling.RollingFileAppender">-->
+<!--        <file>${LOG_DIR}/${fileName}-debug.log</file>-->
+<!--        &lt;!&ndash; Filters, recording only DEBUG Level log &ndash;&gt;-->
+<!--        <filter class="ch.qos.logback.classic.filter.LevelFilter">-->
+<!--            <level>DEBUG</level>-->
+<!--            <onMatch>ACCEPT</onMatch>-->
+<!--            <onMismatch>DENY</onMismatch>-->
+<!--        </filter>-->
+<!--        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">-->
+<!--            &lt;!&ndash; Roll back by day daily &ndash;&gt;-->
+<!--            <fileNamePattern>${LOG_DIR}/%d{yyyy-MM}/${fileName}-debug.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>-->
+<!--            &lt;!&ndash; Maximum log history 30 days &ndash;&gt;-->
+<!--            <maxHistory>${maxHistory}</maxHistory>-->
+<!--            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">-->
+<!--                <maxFileSize>${maxFileSize}</maxFileSize>-->
+<!--            </timeBasedFileNamingAndTriggeringPolicy>-->
+<!--        </rollingPolicy>-->
+
+<!--        <encoder>-->
+<!--            <pattern>${pattern}</pattern>-->
+<!--        </encoder>-->
+<!--    </appender>-->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>
+                %d{dd-MM-yyyy HH:mm:ss.SSS} - %highlight(%-5level) - [%X{token}] - %msg - %logger{36} - [%file :
+                %line]%n
+            </pattern>
+        </encoder>
+    </appender>
+
+<!--    <appender name="STASH" class="net.logstash.logback.appender.LogstashTcpSocketAppender">-->
+<!--        <destination>10.22.22.75:5044</destination>-->
+
+<!--        &lt;!&ndash; encoder is required &ndash;&gt;-->
+<!--        <encoder class="net.logstash.logback.encoder.LogstashEncoder">-->
+<!--            <customFields>{"app_name":"api"} </customFields>-->
+<!--        </encoder>-->
+<!--    </appender>-->
+
+    <logger name="vn.vnpay.sender" additivity="false">
+<!--        <appender-ref ref="WARN" level="warn"/>-->
+<!--        <appender-ref ref="ERROR" level="error"/>-->
+<!--        <appender-ref ref="DEBUG" level="debug"/>-->
+<!--        <appender-ref ref="INFO" level="info"/>-->
+<!--        <appender-ref ref="STASH" level="info"/>-->
+        <appender-ref ref="STDOUT" level="info"/>
+    </logger>
+    <root level="info">
+        <appender-ref ref="STDOUT" />
+    </root>
+</configuration>
