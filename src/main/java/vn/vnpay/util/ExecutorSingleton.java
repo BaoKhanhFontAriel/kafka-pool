@@ -21,7 +21,7 @@ public class ExecutorSingleton {
 
     public ExecutorSingleton(){
         log.info("create new ExecutorServiceSingleton...");
-        this.executorService = Executors.newFixedThreadPool(1000) ;
+        this.executorService = Executors.newFixedThreadPool(20) ;
     }
 
     public static ExecutorSingleton getInstance(){
