@@ -3,42 +3,26 @@ package vn.vnpay.kafka;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Enumeration;
-import java.util.Hashtable;
+import java.util.HashMap;
 import java.util.Set;
 
 @Getter
 @Setter
 public abstract class ObjectPool<T> {
-    private final Hashtable<T, Long> locked;
-    private final Hashtable<T, Long> unlocked;
+    private final HashMap<T, Long> locked;
+    private final HashMap<T, Long> unlocked;
     private long expirationTime;
-    private int initSize;
+//    private int initSize;
     public ObjectPool() {
-        expirationTime = 30000; // 30 seconds
-        locked = new Hashtable<T, Long>();
-        unlocked = new Hashtable<T, Long>();
+        expirationTime = KafkaConfig.getInstance().getKafkaConnectionTimeout();
+        locked = new HashMap<>();
+        unlocked = new HashMap<>();
     }
     public synchronized void shutdown(){
         unlocked.forEach((t, aLong) -> expire(t));
         locked.forEach((t, aLong) -> expire(t));
         unlocked.clear();
         locked.clear();
-    }
-    public synchronized void init(){
-        long now = System.currentTimeMillis();
-        int count = 0;
-        while (count < initSize){
-            unlocked.put(create(), now);
-            count++;
-        }
-    }
-    public synchronized int getIdle(){
-        return unlocked.size();
-    }
-
-    public synchronized int getActive(){
-        return locked.size();
     }
     protected abstract T create();
 
@@ -50,14 +34,13 @@ public abstract class ObjectPool<T> {
         long now = System.currentTimeMillis();
         T t;
         if (unlocked.size() > 0) {
-            Enumeration<T> e = unlocked.keys();
-            while (e.hasMoreElements()) {
-                t = e.nextElement();
+            Set<T> e = unlocked.keySet();
+            while (e.iterator().hasNext()) {
+                t = e.iterator().next();
                 if ((now - unlocked.get(t)) > expirationTime) {
                     // object has expired
                     unlocked.remove(t);
                     expire(t);
-                    t = null;
                 } else {
                     if (validate(t)) {
                         unlocked.remove(t);
@@ -67,7 +50,6 @@ public abstract class ObjectPool<T> {
                         // object failed validation
                         unlocked.remove(t);
                         expire(t);
-                        t = null;
                     }
                 }
             }
@@ -75,7 +57,6 @@ public abstract class ObjectPool<T> {
         // no objects available, create a new one
         t = create();
         locked.put(t, now);
-        ;
         return (t);
     }
 

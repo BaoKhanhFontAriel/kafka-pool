@@ -9,7 +9,6 @@ import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import vn.vnpay.util.ExecutorSingleton;
 
 import java.time.Duration;
 import java.util.Properties;
@@ -22,12 +21,9 @@ public class KafkaConsumerPool extends ObjectPool<KafkaConsumerCell> {
     private static KafkaConsumerPool instancePool;
     protected Properties consumerProps;
     protected String consumerTopic;
-    protected Thread thread;
-    protected long startTime;
-    protected long endTime;
     private static final AtomicReference<LinkedBlockingQueue<String>> recordQueue = new AtomicReference<>(new LinkedBlockingQueue<>());
 
-    public synchronized static KafkaConsumerPool getInstancePool() {
+    public static synchronized KafkaConsumerPool getInstancePool() {
         if (instancePool == null) {
             instancePool = new KafkaConsumerPool();
         }
@@ -35,55 +31,50 @@ public class KafkaConsumerPool extends ObjectPool<KafkaConsumerCell> {
     }
 
     public KafkaConsumerPool() {
-        setExpirationTime(Integer.MAX_VALUE);
-        setInitSize(KafkaPoolConfig.INIT_CONSUMER_POOL_SIZE);
-        consumerTopic = KafkaPoolConfig.KAFKA_CONSUMER_TOPIC;
+        consumerTopic = KafkaConfig.getInstance().getKafkaConsumerTopic();
         consumerProps = new Properties();
-        consumerProps.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KafkaPoolConfig.KAFKA_SERVER);
+        consumerProps.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KafkaConfig.getInstance().getKafkaConsumerTopic());
         consumerProps.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         consumerProps.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
-        consumerProps.setProperty(ConsumerConfig.GROUP_ID_CONFIG, KafkaPoolConfig.KAFKA_CONSUMER_GROUP_ID);
+        consumerProps.setProperty(ConsumerConfig.GROUP_ID_CONFIG, KafkaConfig.getInstance().getKafkaConsumerGroupId());
         consumerProps.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
     }
 
-    public void startPoolPolling() {
-        log.info("Start Kafka consumer pool polling.........");
-        while (getIdle() > 0) {
-            KafkaConsumerCell consumerCell = getConnection();
-            log.info("consumer {} start polling", consumerCell.getConsumer().groupMetadata().groupInstanceId());
-            ExecutorSingleton.submit((Runnable) () ->
-            {
-                while (true) {
-                    ConsumerRecords<String, String> records = consumerCell.poll(Duration.ofMillis(100));
-                    for (ConsumerRecord<String, String> r : records) {
-                        log.info("----");
-                        log.info("kafka consumer id {} receive data: partition = {}, offset = {}, key = {}, value = {}",
-                                consumerCell.getConsumer().groupMetadata().groupInstanceId(),
-                                r.partition(),
-                                r.offset(), r.key(), r.value());
+    public static String getRecord() throws Exception {
+        log.info("Get Kafka Consumer pool record.......");
+        return recordQueue.get().take();
+    }
+    public static void createPolling() {
+        KafkaConsumerCell consumerCell = instancePool.getConnection();
+        log.info("consumer {} start polling", consumerCell.getConsumer().groupMetadata().groupInstanceId());
 
-                            recordQueue.get().add(r.value());
-                    }
+        try {
+            while (true) {
+                ConsumerRecords<String, String> records = consumerCell.poll(Duration.ofMillis(100));
+                for (ConsumerRecord<String, String> r : records) {
+                    log.info("----");
+                    log.info("kafka consumer id {} receive data: partition = {}, offset = {}, key = {}, value = {}",
+                            consumerCell.getConsumer().groupMetadata().groupInstanceId(),
+                            r.partition(),
+                            r.offset(), r.key(), r.value());
 
+                    recordQueue.get().add(r.value());
+                }
 
-                    try {
-                        consumerCell.getConsumer().commitSync();
-                    } catch (CommitFailedException e) {
-                        log.error("commit failed", e);
-                    }
-                }//
-            });
+                try {
+                    consumerCell.getConsumer().commitSync();
+                } catch (CommitFailedException e) {
+                    log.error("commit failed", e);
+                }
+            }
+        }
+        catch (Exception e){
+            log.error("Kafka not start polling ", e);
         }
     }
 
     public KafkaConsumerCell getConnection() {
         return super.checkOut();
-    }
-
-
-    public static String getRecord() throws Exception {
-        log.info("Get Kafka Consumer pool record.......");
-        return recordQueue.get().take();
     }
 
     @Override

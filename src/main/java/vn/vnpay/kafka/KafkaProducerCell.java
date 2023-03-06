@@ -14,9 +14,8 @@ public class KafkaProducerCell {
     private boolean isClosed;
     private org.apache.kafka.clients.producer.KafkaProducer<String, String> producer;
     private String producerTopic;
-    public KafkaProducerCell(Properties producerConfig, String producerTopic) {
+    public KafkaProducerCell(Properties producerConfig) {
         this.producer = new org.apache.kafka.clients.producer.KafkaProducer<>(producerConfig);
-        this.producerTopic = producerTopic;
     }
 
     public void close() {

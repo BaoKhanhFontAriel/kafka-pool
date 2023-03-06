@@ -1,0 +1,6 @@
+Manifest-Version: 1.0
+Main-Class: 
+Class-Path: snappy-java-1.1.8.4.jar logback-classic-1.2.10.jar zstd-jni-
+ 1.5.2-1.jar kafka-clients-3.3.1.jar lz4-java-1.8.0.jar slf4j-api-1.7.7.
+ jar logback-core-1.2.10.jar
+

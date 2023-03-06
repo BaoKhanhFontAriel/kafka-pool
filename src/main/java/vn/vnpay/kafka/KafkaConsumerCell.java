@@ -16,15 +16,10 @@ import java.util.Properties;
 @Getter
 @Setter
 public class KafkaConsumerCell {
-    private long relaxTime;
-    private long timeOut;
     private boolean isClosed;
     private org.apache.kafka.clients.consumer.KafkaConsumer<String, String> consumer;
 
     public KafkaConsumerCell(Properties consumerProps, String consumerTopic) {
-//        String memberId = String.valueOf(index);
-//        consumerProps.setProperty(ConsumerConfig.GROUP_INSTANCE_ID_CONFIG, memberId);
-
         this.consumer = new KafkaConsumer<>(consumerProps);
         this.consumer.subscribe(Collections.singletonList(consumerTopic));
         log.info("create consumer {} - partition {} - topic {}", consumer.groupMetadata().groupInstanceId(), consumer.assignment(), consumerTopic);
