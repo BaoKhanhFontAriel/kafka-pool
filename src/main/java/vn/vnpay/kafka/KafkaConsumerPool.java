@@ -31,9 +31,10 @@ public class KafkaConsumerPool extends ObjectPool<KafkaConsumerCell> {
     }
 
     public KafkaConsumerPool() {
+        log.info("Create Kafka consumer connection pool........................ ");
         consumerTopic = KafkaConfig.getInstance().getKafkaConsumerTopic();
         consumerProps = new Properties();
-        consumerProps.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KafkaConfig.getInstance().getKafkaConsumerTopic());
+        consumerProps.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KafkaConfig.getInstance().getKafkaServer());
         consumerProps.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         consumerProps.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         consumerProps.setProperty(ConsumerConfig.GROUP_ID_CONFIG, KafkaConfig.getInstance().getKafkaConsumerGroupId());
@@ -44,8 +45,8 @@ public class KafkaConsumerPool extends ObjectPool<KafkaConsumerCell> {
         log.info("Get Kafka Consumer pool record.......");
         return recordQueue.get().take();
     }
-    public static void createPolling() {
-        KafkaConsumerCell consumerCell = instancePool.getConnection();
+    public static void startConsumerPolling() {
+        KafkaConsumerCell consumerCell = KafkaConsumerPool.getInstancePool().getConnection();
         log.info("consumer {} start polling", consumerCell.getConsumer().groupMetadata().groupInstanceId());
 
         try {

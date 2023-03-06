@@ -1,9 +1,11 @@
 package vn.vnpay.kafka;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 @Getter
 @Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class KafkaConfig {
 
     private static final class SingletonHolder {
