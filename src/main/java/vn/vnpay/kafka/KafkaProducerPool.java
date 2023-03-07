@@ -17,7 +17,6 @@ import java.util.Properties;
 public class KafkaProducerPool extends ObjectPool<KafkaProducerCell> {
     private static final Logger log = LoggerFactory.getLogger(KafkaProducerPool.class);
     private static KafkaProducerPool instance;
-    private Properties producerProps;
     private KafkaConfig kafkaConfig;
 
     public static synchronized KafkaProducerPool getInstance() {

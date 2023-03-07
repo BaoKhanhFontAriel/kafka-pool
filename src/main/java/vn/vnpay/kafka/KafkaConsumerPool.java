@@ -21,8 +21,6 @@ import java.util.concurrent.atomic.AtomicReference;
 public class KafkaConsumerPool extends ObjectPool<KafkaConsumerCell> {
     private static final Logger log = LoggerFactory.getLogger(KafkaConsumerPool.class);
     private static KafkaConsumerPool instance;
-    private Properties consumerProps;
-    private String consumerTopic;
     private KafkaConfig kafkaConfig;
     private static final AtomicReference<LinkedBlockingQueue<String>> recordQueue = new AtomicReference<>(new LinkedBlockingQueue<>());
 
