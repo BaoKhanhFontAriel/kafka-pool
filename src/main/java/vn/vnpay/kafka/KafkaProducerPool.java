@@ -33,7 +33,12 @@ public class KafkaProducerPool extends ObjectPool<KafkaProducerCell> {
 
     public void send(String message) throws Exception {
         log.info("Kafka send.........");
-        KafkaProducerCell producerCell = getConnection();
+        KafkaProducerCell producerCell = null;
+        try {
+            producerCell = getConnection();
+        } catch (InterruptedException e) {
+            throw new Exception("fail to get Kafka producer connection ", e);
+        }
         KafkaProducer<String, String> producer = producerCell.getProducer();
 
         // send message
@@ -52,14 +57,17 @@ public class KafkaProducerPool extends ObjectPool<KafkaProducerCell> {
             });
         }
         catch (Exception e){
-            throw new Exception("Kafka can not produce message");
+            throw  new Exception("Kafka can not produce message ", e);
         }
-
-        KafkaProducerPool.getInstance().releaseConnection(producerCell);
+        finally {
+            KafkaProducerPool.getInstance().releaseConnection(producerCell);
+        }
     }
 
-    public synchronized KafkaProducerCell getConnection() {
+    public synchronized KafkaProducerCell getConnection() throws InterruptedException {
         log.info("Get kafka production connection.............");
+        log.info("inUse pool size = {}", super.getInUse().size());
+        log.info("available pool size = {}", super.getAvailable().size());
         return super.checkOut();
     }
 

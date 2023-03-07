@@ -2,61 +2,77 @@ package vn.vnpay.kafka;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 
+import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.Set;
+import java.util.concurrent.LinkedBlockingQueue;
 
 @Getter
 @Setter
+@Slf4j
 public abstract class ObjectPool<T> {
-    private final HashMap<T, Long> locked;
-    private final HashMap<T, Long> unlocked;
+    private final Hashtable<T, Long> inUse;
+    private final Hashtable<T, Long> available;
     private long expirationTime;
+    private int maxPoolSize;
+
     public ObjectPool() {
+        maxPoolSize = 10;
         expirationTime = 30000;
-        locked = new HashMap<>();
-        unlocked = new HashMap<>();
+        inUse = new Hashtable<>();
+        available = new Hashtable<>();
     }
     public synchronized void shutdown(){
-        unlocked.forEach((t, aLong) -> expire(t));
-        locked.forEach((t, aLong) -> expire(t));
-        unlocked.clear();
-        locked.clear();
+        available.forEach((t, aLong) -> expire(t));
+        inUse.forEach((t, aLong) -> expire(t));
+        available.clear();
+        inUse.clear();
     }
     protected abstract T create();
     public abstract boolean validate(T o);
     public abstract void expire(T o);
-    public synchronized T checkOut() {
+    public synchronized T checkOut() throws InterruptedException {
         long now = System.currentTimeMillis();
         T t;
-        if (unlocked.size() > 0) {
-            Set<T> e = unlocked.keySet();
-            while (e.iterator().hasNext()) {
-                t = e.iterator().next();
-                if ((now - unlocked.get(t)) > expirationTime) {
+
+        // no objects available and pool size is bigger than max pool size, wait until available
+        while (inUse.size() == maxPoolSize){
+            log.info("inUse pool size is full, waiting for available");
+            wait();
+        }
+
+        if (available.size() > 0) {
+            Enumeration<T> e = available.keys();
+            while (e.hasMoreElements()) {
+                t = e.nextElement();
+                if ((now - available.get(t)) > expirationTime) {
                     // object has expired
-                    unlocked.remove(t);
+                    available.remove(t);
                     expire(t);
                 } else {
                     if (validate(t)) {
-                        unlocked.remove(t);
-                        locked.put(t, now);
+                        available.remove(t);
+                        inUse.put(t, now);
                         return (t);
                     } else {
                         // object failed validation
-                        unlocked.remove(t);
+                        available.remove(t);
                         expire(t);
                     }
                 }
             }
         }
+
         // no objects available, create a new one
         t = create();
-        locked.put(t, now);
+        inUse.put(t, now);
         return (t);
     }
     public synchronized void checkIn(T t) {
-        locked.remove(t);
-        unlocked.put(t, System.currentTimeMillis());
+        inUse.remove(t);
+        available.put(t, System.currentTimeMillis());
     }
 }

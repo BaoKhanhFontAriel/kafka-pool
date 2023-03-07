@@ -16,5 +16,5 @@ public class KafkaConfig {
     private String kafkaConsumerGroupId;
     private String kafkaProducerTopic;
     private String kafkaServer;
-
+    private int maxPoolSize;
 }

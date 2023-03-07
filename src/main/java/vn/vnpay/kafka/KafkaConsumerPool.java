@@ -40,8 +40,14 @@ public class KafkaConsumerPool extends ObjectPool<KafkaConsumerCell> {
         log.info("Get Kafka Consumer pool record.......");
         return recordQueue.get().take();
     }
-    public void createConsumerPolling() {
-        KafkaConsumerCell consumerCell = getConnection();
+    public void createConsumerPolling() throws Exception {
+        KafkaConsumerCell consumerCell = null;
+        try {
+            consumerCell = getConnection();
+        } catch (InterruptedException e) {
+            throw new Exception("consumer fail polling ", e);
+        }
+
         log.info("consumer {} start polling", consumerCell.getConsumer().groupMetadata().groupInstanceId());
 
         try {
@@ -65,12 +71,19 @@ public class KafkaConsumerPool extends ObjectPool<KafkaConsumerCell> {
             }
         }
         catch (Exception e){
-            log.error("Kafka not start polling ", e);
+            throw new Exception("Kafka not start polling ", e);
+        }
+        finally {
+            KafkaConsumerPool.getInstance().releaseConnection(consumerCell);
         }
     }
 
-    public KafkaConsumerCell getConnection() {
+    public KafkaConsumerCell getConnection() throws InterruptedException {
         return super.checkOut();
+    }
+
+    public void releaseConnection(KafkaConsumerCell kafkaConsumerCell){
+        super.checkIn(kafkaConsumerCell);
     }
 
     @Override
