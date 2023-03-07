@@ -1,6 +1,7 @@
 package vn.vnpay.kafka;
 
 import lombok.Getter;
+import lombok.Setter;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -12,34 +13,38 @@ import java.util.Properties;
 
 
 @Getter
+@Setter
 public class KafkaProducerPool extends ObjectPool<KafkaProducerCell> {
     private static final Logger log = LoggerFactory.getLogger(KafkaProducerPool.class);
-    private static KafkaProducerPool instancePool;
-    private final Properties producerProps;
-    public static synchronized KafkaProducerPool getInstancePool() {
-        if (instancePool == null) {
-            instancePool = new KafkaProducerPool();
-        }
-        return instancePool;
-    }
+    private static KafkaProducerPool instance;
+    private Properties producerProps;
+    private KafkaConfig kafkaConfig;
 
-    public KafkaProducerPool() {
-        log.info("Create Kafka Producer Connection pool........................ ");
+    public static synchronized KafkaProducerPool getInstance() {
+        if (instance == null) {
+            instance = new KafkaProducerPool();
+        }
+        return instance;
+    }
+    
+    public void init(){
+        log.info("Initialize Kafka Producer Connection pool........................ ");
+        setExpirationTime(kafkaConfig.getKafkaConnectionTimeout());
         producerProps = new Properties();
-        producerProps.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, KafkaConfig.getInstance().getKafkaServer());
+        producerProps.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaConfig.getKafkaServer());
         producerProps.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         producerProps.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
     }
 
-    public static void send(String message) throws Exception {
+    public void send(String message) throws Exception {
         log.info("Kafka send.........");
-        KafkaProducerCell producerCell = KafkaProducerPool.getInstancePool().getConnection();
+        KafkaProducerCell producerCell = getConnection();
         KafkaProducer<String, String> producer = producerCell.getProducer();
 
         // send message
         log.info("message send {}", message);
         ProducerRecord<String, String> record =
-                new ProducerRecord<>(KafkaConfig.getInstance().getKafkaProducerTopic(), message);
+                new ProducerRecord<>(kafkaConfig.getKafkaProducerTopic(), message);
         try{
             producer.send(record, (recordMetadata, e) -> {
                 if (e == null) {
@@ -55,7 +60,7 @@ public class KafkaProducerPool extends ObjectPool<KafkaProducerCell> {
             throw new Exception("Kafka can not produce message");
         }
 
-        KafkaProducerPool.getInstancePool().releaseConnection(producerCell);
+        KafkaProducerPool.getInstance().releaseConnection(producerCell);
     }
 
     public synchronized KafkaProducerCell getConnection() {

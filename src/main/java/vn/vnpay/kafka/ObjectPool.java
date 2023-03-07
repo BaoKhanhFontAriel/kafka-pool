@@ -12,9 +12,8 @@ public abstract class ObjectPool<T> {
     private final HashMap<T, Long> locked;
     private final HashMap<T, Long> unlocked;
     private long expirationTime;
-//    private int initSize;
     public ObjectPool() {
-        expirationTime = KafkaConfig.getInstance().getKafkaConnectionTimeout();
+        expirationTime = 30000;
         locked = new HashMap<>();
         unlocked = new HashMap<>();
     }
@@ -25,11 +24,8 @@ public abstract class ObjectPool<T> {
         locked.clear();
     }
     protected abstract T create();
-
     public abstract boolean validate(T o);
-
     public abstract void expire(T o);
-
     public synchronized T checkOut() {
         long now = System.currentTimeMillis();
         T t;
@@ -59,7 +55,6 @@ public abstract class ObjectPool<T> {
         locked.put(t, now);
         return (t);
     }
-
     public synchronized void checkIn(T t) {
         locked.remove(t);
         unlocked.put(t, System.currentTimeMillis());

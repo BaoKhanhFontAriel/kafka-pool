@@ -2,6 +2,7 @@ package vn.vnpay.kafka;
 
 
 import lombok.Getter;
+import lombok.Setter;
 import org.apache.kafka.clients.consumer.CommitFailedException;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -16,37 +17,40 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Getter
+@Setter
 public class KafkaConsumerPool extends ObjectPool<KafkaConsumerCell> {
     private static final Logger log = LoggerFactory.getLogger(KafkaConsumerPool.class);
-    private static KafkaConsumerPool instancePool;
-    protected Properties consumerProps;
-    protected String consumerTopic;
+    private static KafkaConsumerPool instance;
+    private Properties consumerProps;
+    private String consumerTopic;
+    private KafkaConfig kafkaConfig;
     private static final AtomicReference<LinkedBlockingQueue<String>> recordQueue = new AtomicReference<>(new LinkedBlockingQueue<>());
 
-    public static synchronized KafkaConsumerPool getInstancePool() {
-        if (instancePool == null) {
-            instancePool = new KafkaConsumerPool();
+    public static synchronized KafkaConsumerPool getInstance() {
+        if (instance == null) {
+            instance = new KafkaConsumerPool();
         }
-        return instancePool;
+        return instance;
     }
 
-    public KafkaConsumerPool() {
-        log.info("Create Kafka consumer connection pool........................ ");
-        consumerTopic = KafkaConfig.getInstance().getKafkaConsumerTopic();
+    public void init(){
+        log.info("Initialize Kafka consumer connection pool........................ ");
+        setExpirationTime(kafkaConfig.getKafkaConnectionTimeout());
+        consumerTopic = kafkaConfig.getKafkaConsumerTopic();
         consumerProps = new Properties();
-        consumerProps.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, KafkaConfig.getInstance().getKafkaServer());
+        consumerProps.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaConfig.getKafkaServer());
         consumerProps.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
         consumerProps.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
-        consumerProps.setProperty(ConsumerConfig.GROUP_ID_CONFIG, KafkaConfig.getInstance().getKafkaConsumerGroupId());
+        consumerProps.setProperty(ConsumerConfig.GROUP_ID_CONFIG, kafkaConfig.getKafkaConsumerGroupId());
         consumerProps.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
     }
 
-    public static String getRecord() throws Exception {
+    public String getRecord() throws Exception {
         log.info("Get Kafka Consumer pool record.......");
         return recordQueue.get().take();
     }
-    public static void startConsumerPolling() {
-        KafkaConsumerCell consumerCell = KafkaConsumerPool.getInstancePool().getConnection();
+    public void createConsumerPolling() {
+        KafkaConsumerCell consumerCell = getConnection();
         log.info("consumer {} start polling", consumerCell.getConsumer().groupMetadata().groupInstanceId());
 
         try {
