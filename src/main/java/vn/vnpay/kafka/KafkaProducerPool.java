@@ -30,10 +30,6 @@ public class KafkaProducerPool extends ObjectPool<KafkaProducerCell> {
     public void init(){
         log.info("Initialize Kafka Producer Connection pool........................ ");
         setExpirationTime(kafkaConfig.getKafkaConnectionTimeout());
-        producerProps = new Properties();
-        producerProps.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaConfig.getKafkaServer());
-        producerProps.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-        producerProps.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
     }
 
     public void send(String message) throws Exception {
@@ -75,7 +71,7 @@ public class KafkaProducerPool extends ObjectPool<KafkaProducerCell> {
 
     @Override
     protected KafkaProducerCell create() {
-        return (new KafkaProducerCell(producerProps));
+        return KafkaProducerCell.getInstance();
     }
 
     @Override

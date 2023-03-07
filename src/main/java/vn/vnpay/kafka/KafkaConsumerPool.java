@@ -36,13 +36,6 @@ public class KafkaConsumerPool extends ObjectPool<KafkaConsumerCell> {
     public void init(){
         log.info("Initialize Kafka consumer connection pool........................ ");
         setExpirationTime(kafkaConfig.getKafkaConnectionTimeout());
-        consumerTopic = kafkaConfig.getKafkaConsumerTopic();
-        consumerProps = new Properties();
-        consumerProps.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaConfig.getKafkaServer());
-        consumerProps.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
-        consumerProps.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class.getName());
-        consumerProps.setProperty(ConsumerConfig.GROUP_ID_CONFIG, kafkaConfig.getKafkaConsumerGroupId());
-        consumerProps.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "latest");
     }
 
     public String getRecord() throws Exception {
@@ -84,7 +77,7 @@ public class KafkaConsumerPool extends ObjectPool<KafkaConsumerCell> {
 
     @Override
     protected KafkaConsumerCell create() {
-        return new KafkaConsumerCell(consumerProps, consumerTopic);
+        return KafkaConsumerCell.getInstance();
     }
 
     @Override
