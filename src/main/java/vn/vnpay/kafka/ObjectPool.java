@@ -37,12 +37,11 @@ public abstract class ObjectPool<T> {
     public synchronized T checkOut() throws InterruptedException {
         long now = System.currentTimeMillis();
         T t;
-
         // no objects available and pool size is bigger than max pool size, wait until available
-        while (inUse.size() == maxPoolSize){
-            log.info("inUse pool size is full, waiting for available");
-            wait();
-        }
+//        while (inUse.size() == maxPoolSize){
+//            log.info("inUse pool size is full, waiting for available");
+//            wait();
+//        }
 
         if (available.size() > 0) {
             Enumeration<T> e = available.keys();
@@ -56,6 +55,7 @@ public abstract class ObjectPool<T> {
                     if (validate(t)) {
                         available.remove(t);
                         inUse.put(t, now);
+                        log.info("move object from available to inuse");
                         return (t);
                     } else {
                         // object failed validation

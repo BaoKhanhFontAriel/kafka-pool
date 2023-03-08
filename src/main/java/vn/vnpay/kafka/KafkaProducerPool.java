@@ -66,13 +66,11 @@ public class KafkaProducerPool extends ObjectPool<KafkaProducerCell> {
 
     public synchronized KafkaProducerCell getConnection() throws InterruptedException {
         log.info("Get kafka production connection.............");
-        log.info("inUse pool size = {}", super.getInUse().size());
-        log.info("available pool size = {}", super.getAvailable().size());
         return super.checkOut();
     }
 
     public void releaseConnection(KafkaProducerCell consumer) {
-        log.info("begin releasing connection {}", consumer);
+        log.info("Begin releasing connection {}", consumer);
         super.checkIn(consumer);
     }
 

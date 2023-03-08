@@ -27,7 +27,7 @@ public class KafkaConsumerCell {
         return KafkaConsumerCell.SingletonHolder.INSTANCE;
     }
     public KafkaConsumerCell() {
-        KafkaConfig kafkaConfig = KafkaProducerPool.getInstance().getKafkaConfig();
+        KafkaConfig kafkaConfig = KafkaConsumerPool.getInstance().getKafkaConfig();
         String consumerTopic = kafkaConfig.getKafkaConsumerTopic();
         Properties consumerProps = new Properties();
         consumerProps.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaConfig.getKafkaServer());
