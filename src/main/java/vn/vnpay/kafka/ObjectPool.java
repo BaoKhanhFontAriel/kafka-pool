@@ -4,63 +4,57 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.Set;
-import java.util.concurrent.LinkedBlockingQueue;
 
 @Getter
 @Setter
 @Slf4j
 public abstract class ObjectPool<T> {
-    private final Hashtable<T, Long> inUse;
-    private final Hashtable<T, Long> available;
-    private long expirationTime;
-    private int maxPoolSize;
+    private final HashMap<T, Long> inUse;
+    private final HashMap<T, Long> available;
+    private long expirationTime = 30000;
+    private int maxPoolSize = 10;
 
-    public ObjectPool() {
-        maxPoolSize = 10;
-        expirationTime = 30000;
-        inUse = new Hashtable<>();
-        available = new Hashtable<>();
+    protected ObjectPool() {
+        inUse = new HashMap<>();
+        available = new HashMap<>();
     }
     public synchronized void shutdown(){
-        available.forEach((t, aLong) -> expire(t));
-        inUse.forEach((t, aLong) -> expire(t));
+        available.forEach((t, aLong) -> close(t));
+        inUse.forEach((t, aLong) -> close(t));
         available.clear();
         inUse.clear();
     }
+
     protected abstract T create();
-    public abstract boolean validate(T o);
-    public abstract void expire(T o);
-    public synchronized T checkOut() throws InterruptedException {
+    protected abstract boolean isOpen(T o);
+    protected abstract void close(T o);
+    protected synchronized T getMember() throws InterruptedException {
         long now = System.currentTimeMillis();
         T t;
-        // no objects available and pool size is bigger than max pool size, wait until available
-//        while (inUse.size() == maxPoolSize){
-//            log.info("inUse pool size is full, waiting for available");
-//            wait();
-//        }
+        // pool size is equal to max pool size, wait until available
+        while (inUse.size() == maxPoolSize){
+            log.info("Full inUse pool, waiting for available");
+            wait();
+        }
 
         if (available.size() > 0) {
-            Enumeration<T> e = available.keys();
-            while (e.hasMoreElements()) {
-                t = e.nextElement();
+            Set<T> e = available.keySet();
+            while (!e.isEmpty()) {
+                t = e.iterator().next();
                 if ((now - available.get(t)) > expirationTime) {
                     // object has expired
                     available.remove(t);
-                    expire(t);
+                    close(t);
                 } else {
-                    if (validate(t)) {
+                    if (isOpen(t)) {
                         available.remove(t);
                         inUse.put(t, now);
-                        log.info("move object from available to inuse");
                         return (t);
                     } else {
-                        // object failed validation
                         available.remove(t);
-                        expire(t);
+                        close(t);
                     }
                 }
             }
@@ -71,7 +65,7 @@ public abstract class ObjectPool<T> {
         inUse.put(t, now);
         return (t);
     }
-    public synchronized void checkIn(T t) {
+    protected synchronized void release(T t) {
         inUse.remove(t);
         available.put(t, System.currentTimeMillis());
     }

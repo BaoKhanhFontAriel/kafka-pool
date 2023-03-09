@@ -33,6 +33,7 @@ public class KafkaProducerCell {
         producerProps.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         producerProps.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         this.producer = new KafkaProducer<>(producerProps);
+        log.info("Create new producer {}", producer.metrics());
     }
     public void close() {
         try {

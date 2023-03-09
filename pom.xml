@@ -51,6 +51,11 @@
             <artifactId>kafka-clients</artifactId>
             <version>3.3.1</version>
         </dependency>
+        <dependency>
+            <groupId>co.paralleluniverse</groupId>
+            <artifactId>quasar-core</artifactId>
+            <version>0.7.5</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

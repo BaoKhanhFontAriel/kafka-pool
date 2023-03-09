@@ -4,15 +4,12 @@ package vn.vnpay.kafka;
 import lombok.Getter;
 import lombok.Setter;
 import org.apache.kafka.clients.consumer.CommitFailedException;
-import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.common.serialization.StringDeserializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.util.Properties;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -24,16 +21,18 @@ public class KafkaConsumerPool extends ObjectPool<KafkaConsumerCell> {
     private KafkaConfig kafkaConfig;
     private static final AtomicReference<LinkedBlockingQueue<String>> recordQueue = new AtomicReference<>(new LinkedBlockingQueue<>());
 
-    public static synchronized KafkaConsumerPool getInstance() {
-        if (instance == null) {
-            instance = new KafkaConsumerPool();
-        }
-        return instance;
+    public static final class SingletonHolder {
+        private static final KafkaConsumerPool INSTANCE = new KafkaConsumerPool();
+    }
+
+    public static KafkaConsumerPool getInstance() {
+        return KafkaConsumerPool.SingletonHolder.INSTANCE;
     }
 
     public void init(){
         log.info("Initialize Kafka consumer connection pool........................ ");
         setExpirationTime(kafkaConfig.getKafkaConnectionTimeout());
+        setMaxPoolSize(kafkaConfig.getMaxPoolSize());
     }
 
     public String getRecord() throws Exception {
@@ -41,49 +40,45 @@ public class KafkaConsumerPool extends ObjectPool<KafkaConsumerCell> {
         return recordQueue.get().take();
     }
     public void createConsumerPolling() throws Exception {
-        KafkaConsumerCell consumerCell = null;
+        AtomicReference<KafkaConsumerCell> consumerCell = new AtomicReference<>();
         try {
-            consumerCell = getConnection();
+            consumerCell.set(getMember());
         } catch (InterruptedException e) {
-            throw new Exception("consumer fail polling ", e);
+            throw new Exception("Consumer fail polling ", e);
         }
 
-        log.info("consumer {} start polling", consumerCell.getConsumer().groupMetadata().groupInstanceId());
+        log.info("Consumer {} start polling", consumerCell.get().getConsumer().groupMetadata().groupInstanceId());
 
-        try {
-            while (true) {
-                ConsumerRecords<String, String> records = consumerCell.poll(Duration.ofMillis(100));
-                for (ConsumerRecord<String, String> r : records) {
-                    log.info("----");
-                    log.info("kafka consumer id {} receive data: partition = {}, offset = {}, key = {}, value = {}",
-                            consumerCell.getConsumer().groupMetadata().groupInstanceId(),
-                            r.partition(),
-                            r.offset(), r.key(), r.value());
+        new Thread(() -> {
+            try {
+                while (true) {
+                    ConsumerRecords<String, String> recordsKafka = consumerCell.get().poll(Duration.ofMillis(100));
+                    for (ConsumerRecord<String, String> r : recordsKafka) {
+                        log.info("----");
+                        log.info("Kafka consumer id {} receive data: partition = {}, offset = {}, key = {}, value = {}",
+                                consumerCell.get().getConsumer().groupMetadata().groupInstanceId(),
+                                r.partition(),
+                                r.offset(), r.key(), r.value());
 
-                    recordQueue.get().add(r.value());
-                }
+                        recordQueue.get().add(r.value());
+                    }
 
-                try {
-                    consumerCell.getConsumer().commitSync();
-                } catch (CommitFailedException e) {
-                    log.error("commit failed", e);
+                    try {
+                        consumerCell.get().getConsumer().commitSync();
+                    } catch (CommitFailedException e) {
+                        log.info("Kafka commit has ex", e);
+                        log.error("Commit failed", e);
+                    }
                 }
             }
-        }
-        catch (Exception e){
-            throw new Exception("Kafka not start polling ", e);
-        }
-        finally {
-            KafkaConsumerPool.getInstance().releaseConnection(consumerCell);
-        }
-    }
-
-    public KafkaConsumerCell getConnection() throws InterruptedException {
-        return super.checkOut();
-    }
-
-    public void releaseConnection(KafkaConsumerCell kafkaConsumerCell){
-        super.checkIn(kafkaConsumerCell);
+            catch (Exception e){
+                log.info("Kafka consumer has ex ", e);
+                log.error("Kafka not start polling ", e);
+            }
+            finally {
+                release(consumerCell.get());
+            }
+        }).start();
     }
 
     @Override
@@ -92,12 +87,12 @@ public class KafkaConsumerPool extends ObjectPool<KafkaConsumerCell> {
     }
 
     @Override
-    public boolean validate(KafkaConsumerCell o) {
+    public boolean isOpen(KafkaConsumerCell o) {
         return (!o.isClosed());
     }
 
     @Override
-    public void expire(KafkaConsumerCell o) {
+    public void close(KafkaConsumerCell o) {
         o.close();
     }
 }

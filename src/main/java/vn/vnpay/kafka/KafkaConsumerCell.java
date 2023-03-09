@@ -20,9 +20,10 @@ public class KafkaConsumerCell {
     private boolean closed;
     private org.apache.kafka.clients.consumer.KafkaConsumer<String, String> consumer;
 
-    private static final class SingletonHolder {
+    public static final class SingletonHolder {
         private static final KafkaConsumerCell INSTANCE = new KafkaConsumerCell();
     }
+
     public static KafkaConsumerCell getInstance() {
         return KafkaConsumerCell.SingletonHolder.INSTANCE;
     }
