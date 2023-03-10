@@ -19,7 +19,8 @@ public class KafkaConsumerPool extends ObjectPool<KafkaConsumerCell> {
     private static final Logger log = LoggerFactory.getLogger(KafkaConsumerPool.class);
     private static KafkaConsumerPool instance;
     private KafkaConfig kafkaConfig;
-    private static final AtomicReference<LinkedBlockingQueue<String>> recordQueue = new AtomicReference<>(new LinkedBlockingQueue<>());
+    private static final AtomicReference<LinkedBlockingQueue<String>> recordQueue
+            = new AtomicReference<>(new LinkedBlockingQueue<>());
 
     public static final class SingletonHolder {
         private static final KafkaConsumerPool INSTANCE = new KafkaConsumerPool();
@@ -44,7 +45,7 @@ public class KafkaConsumerPool extends ObjectPool<KafkaConsumerCell> {
         try {
             consumerCell.set(getMember());
         } catch (InterruptedException e) {
-            throw new Exception("Consumer fail polling ", e);
+            throw new Exception("Fail getting kafka consumer", e);
         }
 
         log.info("Consumer {} start polling", consumerCell.get().getConsumer().groupMetadata().groupInstanceId());
@@ -83,7 +84,7 @@ public class KafkaConsumerPool extends ObjectPool<KafkaConsumerCell> {
 
     @Override
     protected KafkaConsumerCell create() {
-        return KafkaConsumerCell.getInstance();
+        return new KafkaConsumerCell();
     }
 
     @Override

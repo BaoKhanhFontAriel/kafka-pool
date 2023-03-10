@@ -59,7 +59,7 @@ public class KafkaProducerPool extends ObjectPool<KafkaProducerCell> {
     }
     @Override
     protected KafkaProducerCell create() {
-        return KafkaProducerCell.getInstance();
+        return new KafkaProducerCell();
     }
 
     @Override

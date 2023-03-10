@@ -19,13 +19,13 @@ public class KafkaProducerCell {
     private org.apache.kafka.clients.producer.KafkaProducer<String, String> producer;
     private String producerTopic;
 
-    private static final class SingletonHolder {
-        private static final KafkaProducerCell INSTANCE = new KafkaProducerCell();
-    }
-
-    public static KafkaProducerCell getInstance() {
-        return KafkaProducerCell.SingletonHolder.INSTANCE;
-    }
+//    private static final class SingletonHolder {
+//        private static final KafkaProducerCell INSTANCE = new KafkaProducerCell();
+//    }
+//
+//    public static KafkaProducerCell getInstance() {
+//        return KafkaProducerCell.SingletonHolder.INSTANCE;
+//    }
     public KafkaProducerCell() {
         KafkaConfig kafkaConfig = KafkaProducerPool.getInstance().getKafkaConfig();
         Properties producerProps = new Properties();
