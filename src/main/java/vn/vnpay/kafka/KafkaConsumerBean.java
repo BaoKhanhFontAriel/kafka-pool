@@ -6,10 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
-import org.apache.kafka.common.serialization.StringSerializer;
 
 import java.time.Duration;
 import java.util.Collections;
@@ -30,7 +27,7 @@ public class KafkaConsumerBean {
         return SingletonHolder.INSTANCE;
     }
 
-    public KafkaConsumer<String, String> openConnection(){
+    public KafkaConsumer<String, String> createConnection(){
         KafkaConfig kafkaConfig = KafkaConsumerPool.getInstance().getKafkaConfig();
         String consumerTopic = kafkaConfig.getKafkaConsumerTopic();
         Properties consumerProps = new Properties();

@@ -7,7 +7,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.producer.ProducerRecord;
 
 import java.time.Duration;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -78,7 +77,7 @@ public class KafkaConsumerPool extends ObjectPool<KafkaConsumer<String,String>> 
 
     @Override
     protected KafkaConsumer<String,String> create() {
-        return KafkaConsumerBean.getInstance().openConnection();
+        return KafkaConsumerBean.getInstance().createConnection();
     }
 
     @Override

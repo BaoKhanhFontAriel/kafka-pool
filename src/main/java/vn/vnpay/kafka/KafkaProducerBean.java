@@ -1,6 +1,5 @@
 package vn.vnpay.kafka;
 
-import com.sun.org.apache.bcel.internal.generic.INSTANCEOF;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +20,7 @@ public class KafkaProducerBean {
     public static KafkaProducerBean getInstance() {
         return SingletonHolder.INSTANCE;
     }
-    public KafkaProducer<String, String> openConnection(){
+    public KafkaProducer<String, String> createConnection(){
         KafkaConfig kafkaConfig = KafkaProducerPool.getInstance().getKafkaConfig();
         Properties producerProps = new Properties();
         producerProps.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaConfig.getKafkaServer());

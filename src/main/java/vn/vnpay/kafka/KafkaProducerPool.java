@@ -58,7 +58,7 @@ public class KafkaProducerPool extends ObjectPool<KafkaProducer<String, String>>
 
     @Override
     protected KafkaProducer<String, String> create() {
-        return KafkaProducerBean.getInstance().openConnection();
+        return KafkaProducerBean.getInstance().createConnection();
     }
 
     @Override
