@@ -30,8 +30,9 @@ public abstract class ObjectPool<T> {
     protected abstract T create();
     protected abstract boolean isOpen(T o);
     protected abstract void close(T o);
+
+
     protected synchronized T getMember() throws InterruptedException {
-        long now = System.currentTimeMillis();
         T t;
         // pool size is equal to max pool size, wait until available
         while (inUse.size() == maxPoolSize){
@@ -39,6 +40,7 @@ public abstract class ObjectPool<T> {
             wait();
         }
 
+        long now = System.currentTimeMillis();
         if (available.size() > 0) {
             Set<T> e = available.keySet();
             while (!e.isEmpty()) {
@@ -65,6 +67,7 @@ public abstract class ObjectPool<T> {
         inUse.put(t, now);
         return (t);
     }
+
     protected synchronized void release(T t) {
         inUse.remove(t);
         available.put(t, System.currentTimeMillis());

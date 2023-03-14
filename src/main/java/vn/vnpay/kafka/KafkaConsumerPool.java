@@ -3,11 +3,10 @@ package vn.vnpay.kafka;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.apache.kafka.clients.consumer.CommitFailedException;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
 
 import java.time.Duration;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -15,22 +14,22 @@ import java.util.concurrent.atomic.AtomicReference;
 
 @Getter
 @Setter
-public class KafkaConsumerPool extends ObjectPool<KafkaConsumerCell> {
-    private static final Logger log = LoggerFactory.getLogger(KafkaConsumerPool.class);
+@Slf4j
+public class KafkaConsumerPool extends ObjectPool<KafkaConsumer<String,String>> {
     private static KafkaConsumerPool instance;
     private KafkaConfig kafkaConfig;
     private static final AtomicReference<LinkedBlockingQueue<String>> recordQueue
             = new AtomicReference<>(new LinkedBlockingQueue<>());
 
-    public static final class SingletonHolder {
+    private static final class SingletonHolder {
         private static final KafkaConsumerPool INSTANCE = new KafkaConsumerPool();
     }
 
     public static KafkaConsumerPool getInstance() {
-        return KafkaConsumerPool.SingletonHolder.INSTANCE;
+        return SingletonHolder.INSTANCE;
     }
 
-    public void init(){
+    public void init() {
         log.info("Initialize Kafka consumer connection pool........................ ");
         setExpirationTime(kafkaConfig.getKafkaConnectionTimeout());
         setMaxPoolSize(kafkaConfig.getMaxPoolSize());
@@ -40,60 +39,62 @@ public class KafkaConsumerPool extends ObjectPool<KafkaConsumerCell> {
         log.info("Get Kafka Consumer pool record.......");
         return recordQueue.get().take();
     }
+
     public void createConsumerPolling() throws Exception {
-        AtomicReference<KafkaConsumerCell> consumerCell = new AtomicReference<>();
+        AtomicReference<KafkaConsumer<String,String>> consumer = new AtomicReference<>();
         try {
-            consumerCell.set(getMember());
-        } catch (InterruptedException e) {
+            consumer.set(getMember());
+        } catch (Exception e) {
             throw new Exception("Fail getting kafka consumer", e);
         }
 
-        log.info("Consumer {} start polling", consumerCell.get().getConsumer().groupMetadata().groupInstanceId());
+        log.info("Consumer {} start polling", consumer.get().groupMetadata().groupInstanceId());
 
         new Thread(() -> {
             try {
                 while (true) {
-                    ConsumerRecords<String, String> recordsKafka = consumerCell.get().poll(Duration.ofMillis(100));
+                    ConsumerRecords<String, String> recordsKafka = consumer.get().poll(Duration.ofMillis(100));
                     for (ConsumerRecord<String, String> r : recordsKafka) {
                         log.info("----");
                         log.info("Kafka consumer id {} receive data: partition = {}, offset = {}, key = {}, value = {}",
-                                consumerCell.get().getConsumer().groupMetadata().groupInstanceId(),
+                                consumer.get().groupMetadata().groupInstanceId(),
                                 r.partition(),
                                 r.offset(), r.key(), r.value());
 
                         recordQueue.get().add(r.value());
                     }
+                    consumer.get().commitSync();
 
-                    try {
-                        consumerCell.get().getConsumer().commitSync();
-                    } catch (CommitFailedException e) {
-                        log.info("Kafka commit has ex", e);
-                        log.error("Commit failed", e);
-                    }
                 }
-            }
-            catch (Exception e){
+            } catch (Exception e) {
                 log.info("Kafka consumer has ex ", e);
                 log.error("Kafka not start polling ", e);
-            }
-            finally {
-                release(consumerCell.get());
+            } finally {
+                release(consumer.get());
             }
         }).start();
     }
 
     @Override
-    protected KafkaConsumerCell create() {
-        return new KafkaConsumerCell();
+    protected KafkaConsumer<String,String> create() {
+        return KafkaConsumerBean.getInstance().createConnection();
     }
 
     @Override
-    public boolean isOpen(KafkaConsumerCell o) {
-        return (!o.isClosed());
+    public boolean isOpen(KafkaConsumer<String,String> o) {
+        boolean isOpen = true;
+        try {
+            o.poll(Duration.ofMillis(1));
+        }
+        catch (Exception e){
+            log.error("Kafka consumer has closed ", e);
+            isOpen = false;
+        }
+        return isOpen;
     }
 
     @Override
-    public void close(KafkaConsumerCell o) {
+    public void close(KafkaConsumer<String,String> o) {
         o.close();
     }
 }
