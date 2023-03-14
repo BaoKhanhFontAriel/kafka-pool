@@ -32,7 +32,6 @@ public class KafkaProducerPool extends ObjectPool<KafkaProducer<String, String>>
 
     public void send(String message) throws Exception {
         log.info("Kafka send.........");
-//        KafkaProducer producerBean = getMember();
         KafkaProducer<String, String> producer = getMember();
 
         // send message

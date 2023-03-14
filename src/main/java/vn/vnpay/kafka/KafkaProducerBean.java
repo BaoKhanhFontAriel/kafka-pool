@@ -14,14 +14,10 @@ import java.util.Properties;
 @Getter
 @Setter
 public class KafkaProducerBean {
-    private long relaxTime;
-    private boolean isClosed;
     private KafkaProducer<String, String> producer;
-
     private static final class SingletonHolder {
         private static final KafkaProducerBean INSTANCE = new KafkaProducerBean();
     }
-
     public static KafkaProducerBean getInstance() {
         return SingletonHolder.INSTANCE;
     }
@@ -35,5 +31,4 @@ public class KafkaProducerBean {
         log.info("Create new producer {}", producer);
         return producer;
     }
-
 }

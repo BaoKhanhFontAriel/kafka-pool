@@ -20,7 +20,6 @@ import java.util.Properties;
 @Getter
 @Setter
 public class KafkaConsumerBean {
-    private boolean closed;
     private KafkaConsumer<String, String> consumer;
 
     private static final class SingletonHolder {
