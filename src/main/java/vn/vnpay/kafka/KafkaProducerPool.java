@@ -63,9 +63,11 @@ public class KafkaProducerPool extends ObjectPool<KafkaProducer<String, String>>
 
     @Override
     public boolean isOpen(KafkaProducer<String, String> o) {
+        ProducerRecord<String, String> recordKafka = new ProducerRecord<>("check-open-topic", "");
         boolean isOpen = true;
         try {
-            o.partitionsFor(kafkaConfig.getKafkaProducerTopic());
+            o.send(recordKafka);
+//            o.partitionsFor(kafkaConfig.getKafkaProducerTopic());
         }
         catch (Exception e){
             log.error("Kafka producer has closed ", e);
